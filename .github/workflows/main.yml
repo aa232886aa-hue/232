@@ -11,20 +11,31 @@ jobs:
       - name: Unzip and Move Files
         run: |
           unzip project.zip -d temp_folder
-          # חיפוש הקובץ pubspec.yaml כדי למצוא את שורש הפרויקט
-          ROOT_DIR=$(find temp_folder -name "pubspec.yaml" -exec dirname {} \;)
-          echo "Project root found at: $ROOT_DIR"
-          # העברת כל התוכן לשורש הריפוזיטורי
+          ROOT_DIR=$(find temp_folder -name "lib" -exec dirname {} \;)
           cp -R $ROOT_DIR/* .
           rm -rf temp_folder
 
-      - name: Fix Pubspec Encoding
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Recreate Android Project
+        run: |
+          rm -rf android
+          flutter create . --platforms android --org com.yourname.app
+
+      - name: Fix SDK Version for Android 8.1+
+        run: |
+          # הגדרת גרסת מינימום ל-21 כדי לתמוך באנדרואיד 8.1 ומעלה
+          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' android/app/build.gradle
+
+      - name: Fix Pubspec
         run: |
           cat <<EOF > pubspec.yaml
           name: my_app
-          description: Webview app with microphone support
-          version: 1.0.0+1
-          publish_to: 'none'
           environment:
             sdk: ">=2.17.0 <4.0.0"
           dependencies:
@@ -38,11 +49,9 @@ jobs:
               - assets/
           EOF
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
+      - name: Add Permissions to AndroidManifest
+        run: |
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get

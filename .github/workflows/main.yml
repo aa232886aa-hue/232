@@ -17,7 +17,6 @@ jobs:
 
       - name: Fix Pubspec Immediately
         run: |
-          # יצירת קובץ תקין לפני שפלאטר בכלל נוגע בתיקייה
           cat <<EOF > pubspec.yaml
           name: my_app
           description: Webview app
@@ -45,26 +44,22 @@ jobs:
       - name: Recreate Android Project
         run: |
           rm -rf android
-          # עכשיו זה יעבוד כי ה-pubspec תקין
           flutter create . --platforms android --org com.yourname.app
-
-      - name: Fix SDK Version for Android 8.1+
-        run: |
-          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' android/app/build.gradle
 
       - name: Add Permissions to AndroidManifest
         run: |
+          # הזרקת הרשאות לקובץ המניפסט
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+        # כאן הגדרנו את ה-min-sdk ישירות בפקודה כדי לתמוך באנדרואיד 8.1 ומעלה
+        run: flutter build apk --release --no-tree-shake-icons --split-per-abi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk

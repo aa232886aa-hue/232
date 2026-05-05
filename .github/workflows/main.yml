@@ -15,27 +15,14 @@ jobs:
           cp -R $ROOT_DIR/* .
           rm -rf temp_folder
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Recreate Android Project
+      - name: Fix Pubspec Immediately
         run: |
-          rm -rf android
-          flutter create . --platforms android --org com.yourname.app
-
-      - name: Fix SDK Version for Android 8.1+
-        run: |
-          # הגדרת גרסת מינימום ל-21 כדי לתמוך באנדרואיד 8.1 ומעלה
-          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
-          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' android/app/build.gradle
-
-      - name: Fix Pubspec
-        run: |
+          # יצירת קובץ תקין לפני שפלאטר בכלל נוגע בתיקייה
           cat <<EOF > pubspec.yaml
           name: my_app
+          description: Webview app
+          version: 1.0.0+1
+          publish_to: 'none'
           environment:
             sdk: ">=2.17.0 <4.0.0"
           dependencies:
@@ -48,6 +35,23 @@ jobs:
             assets:
               - assets/
           EOF
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Recreate Android Project
+        run: |
+          rm -rf android
+          # עכשיו זה יעבוד כי ה-pubspec תקין
+          flutter create . --platforms android --org com.yourname.app
+
+      - name: Fix SDK Version for Android 8.1+
+        run: |
+          sed -i 's/minSdkVersion .*/minSdkVersion 21/' android/app/build.gradle
+          sed -i 's/targetSdkVersion .*/targetSdkVersion 34/' android/app/build.gradle
 
       - name: Add Permissions to AndroidManifest
         run: |

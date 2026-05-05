@@ -8,8 +8,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Unzip Project
-        run: unzip project.zip -d .
+      - name: Unzip and Move Files
+        run: |
+          unzip project.zip -d temp_folder
+          # חיפוש הקובץ pubspec.yaml כדי למצוא את שורש הפרויקט
+          ROOT_DIR=$(find temp_folder -name "pubspec.yaml" -exec dirname {} \;)
+          echo "Project root found at: $ROOT_DIR"
+          # העברת כל התוכן לשורש הריפוזיטורי
+          cp -R $ROOT_DIR/* .
+          rm -rf temp_folder
 
       - name: Fix Pubspec Encoding
         run: |

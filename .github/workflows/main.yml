@@ -11,11 +11,57 @@ jobs:
       - name: Unzip and Move Files
         run: |
           unzip project.zip -d temp_folder
-          ROOT_DIR=$(find temp_folder -name "lib" -exec dirname {} \;)
+          ROOT_DIR=$(find temp_folder -name "assets" -exec dirname {} \;)
           cp -R $ROOT_DIR/* .
           rm -rf temp_folder
 
-      - name: Fix Pubspec Immediately
+      - name: Create Clean Main.dart
+        run: |
+          mkdir -p lib
+          cat <<EOF > lib/main.dart
+          import 'package:flutter/material.dart';
+          import 'package:webview_flutter/webview_flutter.dart';
+          import 'package:permission_handler/permission_handler.dart';
+
+          void main() async {
+            WidgetsFlutterBinding.ensureInitialized();
+            await Permission.microphone.request();
+            runApp(const MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: WebViewPage(),
+            ));
+          }
+
+          class WebViewPage extends StatefulWidget {
+            const WebViewPage({super.key});
+            @override
+            State<WebViewPage> createState() => _WebViewPageState();
+          }
+
+          class _WebViewPageState extends State<WebViewPage> {
+            late final WebViewController controller;
+
+            @override
+            void initState() {
+              super.initState();
+              controller = WebViewController()
+                ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                ..setBackgroundColor(const Color(0x00000000))
+                ..loadFlutterAsset('assets/index.html');
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                body: SafeArea(
+                  child: WebViewWidget(controller: controller),
+                ),
+              );
+            }
+          }
+          EOF
+
+      - name: Fix Pubspec
         run: |
           cat <<EOF > pubspec.yaml
           name: my_app
@@ -23,7 +69,7 @@ jobs:
           version: 1.0.0+1
           publish_to: 'none'
           environment:
-            sdk: ">=2.17.0 <4.0.0"
+            sdk: ">=3.0.0 <4.0.0"
           dependencies:
             flutter:
               sdk: flutter
@@ -48,14 +94,12 @@ jobs:
 
       - name: Add Permissions to AndroidManifest
         run: |
-          # הזרקת הרשאות לקובץ המניפסט
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get
 
       - name: Build APK
-        # כאן הגדרנו את ה-min-sdk ישירות בפקודה כדי לתמוך באנדרואיד 8.1 ומעלה
         run: flutter build apk --release --no-tree-shake-icons --split-per-abi
 
       - name: Upload APK

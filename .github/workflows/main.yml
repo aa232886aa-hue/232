@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # עודכן ל-v4
 
       - name: Unzip Project
         run: unzip project.zip -d .
@@ -21,11 +21,10 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        # הפקודה הזו בונה APK בלי לבדוק אייקונים חסרים כדי למנוע שגיאות
         run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # עודכן ל-v4 כדי לתקן את השגיאה
         with:
           name: my-app-release
           path: build/app/outputs/flutter-apk/app-release.apk

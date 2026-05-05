@@ -6,10 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # עודכן ל-v4
+        uses: actions/checkout@v4
 
       - name: Unzip Project
-        run: unzip project.zip -d .
+        run: |
+          unzip project.zip -d temp_unzip
+          # מעביר את כל הקבצים מהתיקייה הפנימית (אם קיימת) לתיקייה הראשית
+          if [ $(ls -1 temp_unzip | wc -l) -eq 1 ] && [ -d temp_unzip/* ]; then
+            mv temp_unzip/*/* .
+          else
+            mv temp_unzip/* .
+          fi
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -24,7 +31,7 @@ jobs:
         run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4 # עודכן ל-v4 כדי לתקן את השגיאה
+        uses: actions/upload-artifact@v4
         with:
           name: my-app-release
           path: build/app/outputs/flutter-apk/app-release.apk

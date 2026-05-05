@@ -25,7 +25,6 @@ jobs:
 
           void main() async {
             WidgetsFlutterBinding.ensureInitialized();
-            await Permission.microphone.request();
             runApp(const MaterialApp(
               debugShowCheckedModeBanner: false,
               home: WebViewPage(),
@@ -47,6 +46,14 @@ jobs:
               controller = WebViewController()
                 ..setJavaScriptMode(JavaScriptMode.unrestricted)
                 ..setBackgroundColor(const Color(0x00000000))
+                ..setNavigationDelegate(
+                  NavigationDelegate(
+                    onPageFinished: (String url) {
+                      // בקשת הרשאה רק כשהדף נטען
+                      Permission.microphone.request();
+                    },
+                  ),
+                )
                 ..loadFlutterAsset('assets/index.html');
             }
 
@@ -73,8 +80,8 @@ jobs:
           dependencies:
             flutter:
               sdk: flutter
-            webview_flutter: ^4.2.2
-            permission_handler: ^10.2.0
+            webview_flutter: ^4.10.0 # גרסה מעודכנת
+            permission_handler: ^11.3.1 # גרסה מעודכנת שפותרת את השגיאה
           flutter:
             uses-material-design: true
             assets:
